@@ -70,12 +70,17 @@ const KEYSZ = 20
 const PNG_HEADER = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52])
 const PNG_CHUNK_TYPES = ["PLTE", "IDAT", "bKGD", "cHRM", "dSIG", "eXIf", "gAMA", "hIST", "iCCP", "iTXt", "pHYs", "sBIT", "sPLT", "sRGB", "sTER", "tEXt", "tIME", "tRNS", "zTXt"]  // IHDR and IEND are impossible here
 
-const guessEncryptionKey = () => {
+const OGG_HEADER = new Uint8Array([79, 103, 103, 83, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 /** variable */, 0 /** variable */, 0, 0, 0, 0])  // the 14th - 15th bytes are not consistent
+
+const guessEncryptionKeyByPng = () => {
     const key = new Uint8Array(KEYSZ)
 
 
     // pick a png file
     const info = FILES.find(({ name }) => name.endsWith(".png"))
+    if (!info) {
+        return null
+    }
     const data = getFileData(info)
 
 
@@ -141,7 +146,28 @@ const guessEncryptionKey = () => {
 
     return key
 }
-const KEY = guessEncryptionKey()
+const guessEncryptionKeyByOgg = () => {
+    const key = new Uint8Array(KEYSZ)
+
+
+    // pick a ogg file
+    const info = FILES.find(({ name }) => name.endsWith(".ogg"))
+    const data = getFileData(info)
+
+
+    for (let i = 0; i < OGG_HEADER.length; i++) {
+        key[i] = OGG_HEADER[i] ^ data[i]
+    }
+
+
+    // the 72th - 73th bytes of a ogg file should be the same as the 14th - 15th byte
+    key[14] = (data[72] ^ key[72 % 20]) ^ data[14]
+    key[15] = (data[73] ^ key[73 % 20]) ^ data[15]
+
+
+    return key
+}
+const KEY = guessEncryptionKeyByPng() || guessEncryptionKeyByOgg()
 console.log("encryption key:", KEY)
 
 
