@@ -16,7 +16,7 @@ const OUTPUT_DIR = "./out"
 // 
 const getFileList = () => {
     // the pfs file data structure
-    // see ./norn9.bms
+    // see http://aluigi.altervista.org/bms/norn9.bms
 
     let offset = 0
     offset += 3  // "pf8" file header
